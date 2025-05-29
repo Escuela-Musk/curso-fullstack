@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ejemplo Service Worker: Cálculo en paralelo</title>
+  </head>
+  <body>
+    <h1>Bubble Sort en Service Worker</h1>
+    <button id="sort">Ordenar 100,000 números</button>
+    <pre id="output"></pre>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").then(() => {
+          console.log("Service Worker registrado");
+        });
+      }
+      document.getElementById("sort").onclick = () => {
+        // Demonstrate main thread activity
+        const status = document.createElement("p");
+        status.textContent = "Sorting in progress...";
+        document.body.appendChild(status);
+
+        // Simulate some main thread activity
+        let count = 0;
+        const interval = setInterval(() => {
+          status.textContent = `Sorting in progress... (${++count}s elapsed)`;
+        }, 1000);
+
+        // Clear interval when sorting is done
+        navigator.serviceWorker.ready.then((reg) => {
+          const msgChannel = new MessageChannel();
+          msgChannel.port1.onmessage = (e) => {
+            document.getElementById("output").textContent = e.data;
+            clearInterval(interval);
+            status.textContent = "Sorting completed!";
+          };
+          reg.active.postMessage({ cmd: "sort" }, [msgChannel.port2]);
+        });
+      };
+    </script>
+  </body>
+</html>

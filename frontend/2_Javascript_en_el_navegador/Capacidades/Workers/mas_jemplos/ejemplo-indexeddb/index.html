@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ejemplo Avanzado IndexedDB</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      pre {
+        background: #f5f5f5;
+        padding: 10px;
+        border-radius: 3px;
+      }
+      input,
+      button {
+        padding: 8px;
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ejemplo Avanzado IndexedDB con Joins</h1>
+
+    <section>
+      <h2>Agregar Cliente</h2>
+      <input id="customerName" placeholder="Nombre" type="text" />
+      <input id="customerEmail" placeholder="Email" type="email" />
+      <button id="addCustomer">Agregar Cliente</button>
+    </section>
+
+    <section>
+      <h2>Agregar Pedido</h2>
+      <select id="customerSelect"></select>
+      <input id="orderProduct" placeholder="Producto" type="text" />
+      <input id="orderAmount" placeholder="Cantidad" type="number" />
+      <button id="addOrder">Agregar Pedido</button>
+    </section>
+
+    <section>
+      <h2>Consultar Pedidos por Cliente</h2>
+      <select id="queryCustomer"></select>
+      <button id="queryOrders">Consultar Pedidos</button>
+    </section>
+
+    <section>
+      <h2>Resultados</h2>
+      <pre id="output"></pre>
+    </section>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").then(() => {
+          console.log("Service Worker registrado");
+          loadCustomers();
+        });
+      }
+
+      function loadCustomers() {
+        navigator.serviceWorker.ready.then((reg) => {
+          const msgChannel = new MessageChannel();
+          msgChannel.port1.onmessage = (e) => {
+            const customers = JSON.parse(e.data);
+            const customerSelect = document.getElementById("customerSelect");
+            const querySelect = document.getElementById("queryCustomer");
+
+            customerSelect.innerHTML = "";
+            querySelect.innerHTML = "";
+
+            customers.forEach((customer) => {
+              const option = document.createElement("option");
+              option.value = customer.id;
+              option.textContent = `${customer.name} (${customer.email})`;
+              customerSelect.appendChild(option.cloneNode(true));
+              querySelect.appendChild(option);
+            });
+          };
+          reg.active.postMessage({ cmd: "getCustomers" }, [msgChannel.port2]);
+        });
+      }
+
+      document.getElementById("addCustomer").onclick = () => {
+        const name = document.getElementById("customerName").value;
+        const email = document.getElementById("customerEmail").value;
+
+        navigator.serviceWorker.ready.then((reg) => {
+          const msgChannel = new MessageChannel();
+          msgChannel.port1.onmessage = (e) => {
+            document.getElementById("output").textContent = e.data;
+            loadCustomers();
+          };
+          reg.active.postMessage({ cmd: "addCustomer", name, email }, [
+            msgChannel.port2,
+          ]);
+        });
+      };
+
+      document.getElementById("addOrder").onclick = () => {
+        const customerId = document.getElementById("customerSelect").value;
+        const product = document.getElementById("orderProduct").value;
+        const amount = document.getElementById("orderAmount").value;
+
+        navigator.serviceWorker.ready.then((reg) => {
+          const msgChannel = new MessageChannel();
+          msgChannel.port1.onmessage = (e) => {
+            document.getElementById("output").textContent = e.data;
+          };
+          reg.active.postMessage(
+            { cmd: "addOrder", customerId, product, amount },
+            [msgChannel.port2]
+          );
+        });
+      };
+
+      document.getElementById("queryOrders").onclick = () => {
+        const customerId = document.getElementById("queryCustomer").value;
+
+        navigator.serviceWorker.ready.then((reg) => {
+          const msgChannel = new MessageChannel();
+          msgChannel.port1.onmessage = (e) => {
+            document.getElementById("output").textContent = e.data;
+          };
+          reg.active.postMessage({ cmd: "getOrdersByCustomer", customerId }, [
+            msgChannel.port2,
+          ]);
+        });
+      };
+    </script>
+  </body>
+</html>

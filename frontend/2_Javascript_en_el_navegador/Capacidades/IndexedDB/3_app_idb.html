@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lista de tareas offline</title>
+  </head>
+  <body>
+    <h1>Lista de tareas</h1>
+    <input id="taskInput" type="text" placeholder="Escribe una tarea..." />
+    <button id="addBtn">Añadir tarea</button>
+    <ul id="taskList"></ul>
+
+    <script type="module">
+      import {
+        openDB,
+        deleteDB,
+        wrap,
+        unwrap,
+      } from "https://cdn.jsdelivr.net/npm/idb@8/+esm";
+
+      let db;
+
+      async function initDB() {
+        db = await openDB("TareasDB", 3, {
+          upgrade(db, oldVersion, newVersion, transaction) {
+            console.log(`Migrando de versión ${oldVersion} a ${newVersion}`);
+            const necesitaMigrar = oldVersion < 2;
+
+            switch (oldVersion) {
+              case 0:
+                const tareasStore = db.createObjectStore("tareas", {
+                  keyPath: "id",
+                  autoIncrement: true,
+                });
+                tareasStore.createIndex("texto", "texto", { unique: false });
+
+              case 1:
+                console.log('Añadir campo "completada" a tareas');
+                break;
+
+              case 2:
+                const proyectosStore = db.createObjectStore("proyectos", {
+                  keyPath: "id",
+                  autoIncrement: true,
+                });
+                proyectosStore.createIndex("nombre", "nombre", {
+                  unique: false,
+                });
+                break;
+            }
+
+            if (necesitaMigrar) {
+              const tareas = transaction.objectStore("tareas");
+              tareas.openCursor().then(function iterar(cursor) {
+                if (!cursor) return;
+                const tarea = cursor.value;
+                if (tarea.completada === undefined) {
+                  tarea.completada = false;
+                  cursor.update(tarea);
+                }
+                return cursor.continue().then(iterar);
+              });
+            }
+          },
+        });
+
+        console.log("Base de datos abierta con éxito");
+        mostrarTareas();
+      }
+
+      async function addTask() {
+        const input = document.getElementById("taskInput");
+        const texto = input?.value.trim();
+        if (!texto) return;
+
+        await db.add("tareas", { texto, completada: false });
+        input.value = "";
+        mostrarTareas();
+      }
+
+      async function mostrarTareas() {
+        const lista = document.getElementById("taskList");
+        lista.innerHTML = "";
+
+        const tareas = await db.getAll("tareas");
+        for (const tarea of tareas) {
+          const li = document.createElement("li");
+          li.textContent = tarea.texto;
+
+          const btn = document.createElement("button");
+          btn.textContent = "Eliminar";
+          btn.onclick = () => eliminarTarea(tarea.id);
+
+          li.appendChild(btn);
+          lista.appendChild(li);
+        }
+      }
+
+      async function eliminarTarea(id) {
+        await db.delete("tareas", id);
+        mostrarTareas();
+      }
+
+      document.getElementById("addBtn").addEventListener("click", addTask);
+
+      initDB();
+    </script>
+  </body>
+</html>

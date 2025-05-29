@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ejemplo Service Worker: Caché</title>
+</head>
+<body>
+  <h1>Ejemplo de uso de la caché con Service Worker</h1>
+  <div id="sw-status" style="color: orange;">Service Worker: registrando...</div>
+  <button id="update">Actualizar página</button>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then((reg) => {
+        document.getElementById('sw-status').textContent = 'Service Worker registrado. Esperando activación...';
+        // Escucha el estado del service worker
+        if (reg.installing) {
+          reg.installing.addEventListener('statechange', function(e) {
+            if (e.target.state === 'activated') {
+              document.getElementById('sw-status').textContent = 'Service Worker activo ';
+              document.getElementById('sw-status').style.color = 'green';
+            }
+          });
+        } else if (reg.active) {
+          document.getElementById('sw-status').textContent = 'Service Worker activo ';
+          document.getElementById('sw-status').style.color = 'green';
+        }
+      });
+    } else {
+      document.getElementById('sw-status').textContent = 'Service Worker no soportado en este navegador.';
+      document.getElementById('sw-status').style.color = 'red';
+    }
+    document.getElementById('update').onclick = () => location.reload();
+  </script>
+</body>
+</html>

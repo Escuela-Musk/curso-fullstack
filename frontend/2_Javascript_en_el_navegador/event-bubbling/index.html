@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Bubbling Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="controls">
+        <label>
+          <input type="checkbox" id="useCapture" /> Use Capture Phase
+        </label>
+        <label>
+          <input type="checkbox" id="stopPropagation" /> Stop Propagation
+        </label>
+      </div>
+      <div id="outer" class="box box-large">
+        <div id="middle" class="box box-medium">
+          <div id="inner" class="box box-small">Click me!</div>
+        </div>
+      </div>
+      <div class="link-container">
+        <a href="https://example.com" target="_blank" id="demoLink"
+          >Demo Link</a
+        >
+        <label>
+          <input type="checkbox" id="preventDefault" /> Prevent Default
+        </label>
+      </div>
+    </div>
+    <ol id="delegationList" class="delegation-list">
+      <li>First item</li>
+      <li>Second item</li>
+      <li>Third item</li>
+      <li>Fourth item</li>
+      <li>Fifth item</li>
+    </ol>
+    <script src="script.js"></script>
+  </body>
+</html>
